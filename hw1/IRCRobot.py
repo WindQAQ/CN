@@ -27,7 +27,7 @@ def IRCformat(msg):
 	return (msg + '\r\n').encode()
 
 def sendMsg(msg):
-	if msg is msg:
+	if msg is None:
 		return
 	if isinstance(msg, list):
 		for _ in msg:
