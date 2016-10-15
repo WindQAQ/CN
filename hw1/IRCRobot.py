@@ -6,7 +6,8 @@ from evalExp import evalExp
 IRCSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 IRCServer, IRCPort = 'irc.freenode.net', 6667
 NickName = 'WindRobot'
-Channel = '#WindQAQ'
+Channel = '#CN_Demo'
+Key = 'ILoveTA'
 
 Bufsize = 4096
 
@@ -14,11 +15,11 @@ PRIVMSG = 'PRIVMSG ' + Channel + ' :'
 HELP = ['@repeat <String>', '@cal <Expression>', '@play <Robot Name>', '@guess <Integer>']
 
 def respformat(msg, user=None):
-	if not msg:
-		return ''
+	if msg is None:
+		return None
 	suffix = '' if user == None else ' (' + user + ')'
 	if isinstance(msg, list):
-		return [(PRIVMSG + _) for _ in msg]
+		return [(PRIVMSG + _ + suffix) for _ in msg]
 	else:
 		return PRIVMSG + msg + suffix
 
@@ -26,7 +27,7 @@ def IRCformat(msg):
 	return (msg + '\r\n').encode()
 
 def sendMsg(msg):
-	if not msg:
+	if msg is msg:
 		return
 	if isinstance(msg, list):
 		for _ in msg:
@@ -43,7 +44,7 @@ def IRCRobot():
 	sendMsg('NICK {}'.format(NickName))
 
 	# join
-	sendMsg('JOIN {}'.format(Channel))
+	sendMsg('JOIN {} {}'.format(Channel, Key))
 	
 	gamer, randnum, times = None, None, None
 
@@ -60,7 +61,7 @@ def IRCRobot():
 			continue
 
 		username, IRCCommand = msg[0].split('!', 1)[0][1:], msg[1]
-		response = ''
+		response = None
 
 		# say hi while joining the channel
 		if username == NickName and IRCCommand == 'JOIN':
@@ -69,33 +70,37 @@ def IRCRobot():
 		elif IRCCommand == 'PRIVMSG':
 			action = msg[3][1:] # remove ':'
 			text = msg[4:]
-
 			if action == '@repeat':
-				response = ' '.join(text)
+				response = IRCMsg[IRCMsg.find('@repeat')+8:-2]
 			elif action == '@cal':
 				try:
 					response = str(evalExp(' '.join(text)))
 				except Exception as err:
 					response = str(err)
-			elif action == '@play' and text[0] == NickName and gamer == None:
+			elif action == '@play' and len(text) == 1 and text[0] == NickName and gamer == None:
 				response = 'Start ! (0-100 with 5 times)'
 				gamer, randnum, times = username, random.randint(0, 100), 5
 			elif action == '@guess' and username == gamer:
-				times -= 1
-				if int(text[0]) == randnum:
-					response = 'CORRECT'
-					gamer, times = None, 5
-				else:
-					response = 'Higher' if int(text[0]) < randnum else 'Lower'
-					if times == 0:
-						response = 'You lose! The answer is ' + str(randnum)
+				if len(text) != 1:
+					response = 'ERROR - Please check your input'
+					continue
+				try:
+					int(text[0])
+					times -= 1
+					if int(text[0]) == randnum:
+						response = 'CORRECT' + ' (' + str(times) + ')'
 						gamer, times = None, 5
-				response += ' (' + str(times) + ')'
+					else:
+						response = 'Higher' + ' (' + str(times) + ')' if int(text[0]) < randnum else 'Lower' + ' (' + str(times) + ')'
+						if times == 0:
+							response = 'You lose! The answer is ' + str(randnum) + ' (' + str(times) + ')'
+							gamer, times = None, 5
+				except ValueError:
+					response = 'ERROR: ' + text[0] + ' is not a number'
 			elif action == '@help':
 				response = HELP
-
+		print(response, username)
 		sendMsg(respformat(response, username))
-
 
 if __name__ == '__main__':
 	IRCRobot()
