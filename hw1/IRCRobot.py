@@ -1,7 +1,7 @@
 import socket
 import random
 
-import evalExp
+from evalExp import evalExp
 
 IRCSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 IRCServer, IRCPort = 'irc.freenode.net', 6667
@@ -14,6 +14,8 @@ PRIVMSG = 'PRIVMSG ' + Channel + ' :'
 HELP = ['@repeat <String>', '@cal <Expression>', '@play <Robot Name>', '@guess <Integer>']
 
 def respformat(msg, user=None):
+	if not msg:
+		return ''
 	suffix = '' if user == None else ' (' + user + ')'
 	if isinstance(msg, list):
 		return [(PRIVMSG + _) for _ in msg]
@@ -65,16 +67,16 @@ def IRCRobot():
 			response = 'Hi, I am ' + NickName
 			username = None
 		elif IRCCommand == 'PRIVMSG':
-			if len(msg) <= 4:
-				continue
-
 			action = msg[3][1:] # remove ':'
 			text = msg[4:]
 
 			if action == '@repeat':
 				response = ' '.join(text)
 			elif action == '@cal':
-				response = evalEXp(' '.join(text))
+				try:
+					response = str(evalExp(' '.join(text)))
+				except Exception as err:
+					response = str(err)
 			elif action == '@play' and text[0] == NickName and gamer == None:
 				response = 'Start ! (0-100 with 5 times)'
 				gamer, randnum, times = username, random.randint(0, 100), 5
