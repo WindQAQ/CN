@@ -20,7 +20,6 @@ PRIVMSG = 'PRIVMSG ' + Channel + ' :'
 HELP = ['@repeat <String>', '@cal <Expression>', '@play <Robot Name>', '@guess <Integer>']
 
 def respformat(msg, user=None):
-	print(PRIVMSG, msg, user)
 	if msg is None:
 		return None
 	suffix = '' if user == None else ' (' + user + ')'
