@@ -16,11 +16,11 @@ Channel = Config['CHAN']
 Key = Config['CHAN_KEY']
 
 Bufsize = 4096
-
 PRIVMSG = 'PRIVMSG ' + Channel + ' :'
 HELP = ['@repeat <String>', '@cal <Expression>', '@play <Robot Name>', '@guess <Integer>']
 
 def respformat(msg, user=None):
+	print(PRIVMSG, msg, user)
 	if msg is None:
 		return None
 	suffix = '' if user == None else ' (' + user + ')'
@@ -67,6 +67,7 @@ def IRCRobot():
 			continue
 
 		username, IRCCommand = msg[0].split('!', 1)[0][1:], msg[1]
+		print(username, IRCCommand)
 		response = None
 
 		# say hi while joining the channel
@@ -77,7 +78,7 @@ def IRCRobot():
 			action = msg[3][1:] # remove ':'
 			text = msg[4:]
 			if action == '@repeat':
-				response = IRCMsg[IRCMsg.find('@repeat')+8:].strip('\n')
+				response = IRCMsg[IRCMsg.find('@repeat')+8:-2]
 			elif action == '@cal':
 				try:
 					response = str(evalExp(' '.join(text)))
@@ -105,7 +106,7 @@ def IRCRobot():
 					response = 'ERROR: ' + text[0] + ' is not a number'
 			elif action == '@help':
 				response = HELP
-		print(response, username)
+		print(respformat(response, username))
 		sendMsg(respformat(response, username))
 
 if __name__ == '__main__':
