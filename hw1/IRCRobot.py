@@ -6,8 +6,14 @@ from evalExp import evalExp
 IRCSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 IRCServer, IRCPort = 'irc.freenode.net', 6667
 NickName = 'WindRobot'
-Channel = '#CN_Demo'
-Key = 'ILoveTA'
+
+Config = {}
+with open('config', 'r') as f:
+	for line in f:
+		tmp = line.split('=')
+		Config[tmp[0]] = tmp[1].strip('\n\'')
+Channel = Config['CHAN']
+Key = Config['CHAN_KEY']
 
 Bufsize = 4096
 
@@ -71,7 +77,7 @@ def IRCRobot():
 			action = msg[3][1:] # remove ':'
 			text = msg[4:]
 			if action == '@repeat':
-				response = IRCMsg[IRCMsg.find('@repeat')+8:-2]
+				response = IRCMsg[IRCMsg.find('@repeat')+8:].strip('\n')
 			elif action == '@cal':
 				try:
 					response = str(evalExp(' '.join(text)))
