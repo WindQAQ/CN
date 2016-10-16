@@ -105,7 +105,15 @@ def IRCRobot():
 				except ValueError:
 					response = 'ERROR: ' + text[0] + ' is not a number'
 			elif action == '@youtube':
-				response = Search('youtube', '+'.join(text))
+				if not text:
+					response = 'ERROR: Please Check Your Input'
+				else:
+					response = Search('youtube', '+'.join(text))
+			elif action == '@ruten':
+				if not text:
+					response = 'ERROR: Please Check Your Input'
+				else:
+					response = Search('ruten', '+'.join(text))
 			elif action == '@help':
 				response = HELP
 		print(respformat(response, username))

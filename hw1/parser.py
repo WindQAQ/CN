@@ -1,14 +1,14 @@
 import urllib.request, urllib.parse
 from bs4 import BeautifulSoup
 
+YOUTUBE = 'https://www.youtube.com'
+
 SearchPrefix = {
 	'youtube': 'https://www.youtube.com/results?search_query=',
-	'ruten': 'http://search.ruten.com.tw/search/s000.php?enc=u&searchfrom=searchf&t=0&k='
 }
 
 SearchClass = {
 	'youtube': 'yt-uix-tile-link',
-	'ruten': 'item-name-anchor'
 }
 
 def formatUrl(action, query):
@@ -23,18 +23,19 @@ def getHTML(url):
 		return soup
 
 def findItem(action, soup):	
-	for match in soup.find_all('a', class_=SearchClass[action]):
-		if 'https://googleads' in  match['href']:
-			continue	
-		link = '{}{}'.format(SearchPrefix[action], match['href']) if action == 'youtube' else match['href']
-		return '{} {}'.format(match['title'], link)
+	for match in soup.find_all('a', class_=SearchClass[action], limit=2):
+		if action == 'youtube':
+			if 'https://googleads' in  match['href']:
+				continue
+			title, link = match['title'], '{}{}'.format(YOUTUBE, match['href'])
+		return '{} {}'.format(title, link)
 	return None
 
 def Search(action, query):
-	url = formatUrl(action, query)
-	soup = getHTML(url)
-	item = findItem(action, soup)
-	print(item)
-	return item
-
-# print(Search('youtube', 'PPAP'))
+	try:
+		url = formatUrl(action, query)
+		soup = getHTML(url)
+		item = findItem(action, soup)
+		return item
+	except:
+		return 'No corresponding item'
