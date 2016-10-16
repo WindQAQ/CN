@@ -2,6 +2,7 @@ import socket
 import random
 
 from evalExp import evalExp
+from parser import Search
 
 IRCSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 IRCServer, IRCPort = 'irc.freenode.net', 6667
@@ -17,7 +18,7 @@ Key = Config['CHAN_KEY']
 
 Bufsize = 4096
 PRIVMSG = 'PRIVMSG ' + Channel + ' :'
-HELP = ['@repeat <String>', '@cal <Expression>', '@play <Robot Name>', '@guess <Integer>']
+HELP = ['@repeat <String>', '@cal <Expression>', '@play <Robot Name>', '@guess <Integer>', '@youtube <String>']
 
 def respformat(msg, user=None):
 	if msg is None:
@@ -103,6 +104,8 @@ def IRCRobot():
 							gamer, times = None, 5
 				except ValueError:
 					response = 'ERROR: ' + text[0] + ' is not a number'
+			elif action == '@youtube':
+				response = Search('youtube', '+'.join(text))
 			elif action == '@help':
 				response = HELP
 		print(respformat(response, username))

@@ -1,4 +1,4 @@
-import urllib.request
+import urllib.request, urllib.parse
 from bs4 import BeautifulSoup
 
 SearchPrefix = {
@@ -12,6 +12,7 @@ SearchClass = {
 }
 
 def formatUrl(action, query):
+	query = urllib.parse.quote(query)
 	prefix = SearchPrefix[action]
 	return '{}{}'.format(prefix, query)
 
