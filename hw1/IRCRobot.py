@@ -20,6 +20,13 @@ Bufsize = 4096
 PRIVMSG = 'PRIVMSG ' + Channel + ' :'
 HELP = ['@repeat <String>', '@cal <Expression>', '@play <Robot Name>', '@guess <Integer>', '@youtube <String>']
 
+GAME_START = 'Start! (0-100 with 8 times)'
+GAME_OVER = 'GAME OVER! The answer is'
+HL = {
+	True: 'Higher!',
+	False: 'Lower!'
+}
+
 def respformat(msg, user=None):
 	if msg is None:
 		return None
@@ -40,6 +47,33 @@ def sendMsg(msg):
 			IRCSocket.send(IRCformat(_))
 	else:
 		IRCSocket.send(IRCformat(msg))
+
+def play(gamer, user):
+	if gamer is not None:
+		raise Exception
+
+	res = GAME_START
+	return res, user, random.randint(0, 100), 8
+
+def guess(ans, plain, gamer, times):
+	if len(plain) != 1:
+		raise Exception('Error: The input should contain only a number.')
+	try:
+		num = int(plain[0])
+		times -= 1
+		res = ''
+		if ans == num:
+			res = 'CORRECT!'
+			gamer, times = None, 8
+		else:
+			if times == 0:
+				res = '{} {}.'.format(GAME_OVER, ans)
+				gamer, times = None, 8
+			else:
+				res = '{} ({})'.format(HL[ans > num], times)
+		return res, gamer, times
+	except ValueError:
+		raise Exception('Error: {} is not an integer.'.format(plain[0]))
 
 def IRCRobot():
 	# connect to server
@@ -84,36 +118,21 @@ def IRCRobot():
 					response = str(evalExp(' '.join(text)))
 				except Exception as err:
 					response = str(err)
-			elif action == '@play' and len(text) == 1 and text[0] == NickName and gamer == None:
-				response = 'Start ! (0-100 with 5 times)'
-				gamer, randnum, times = username, random.randint(0, 100), 5
-			elif action == '@guess' and username == gamer:
-				if len(text) != 1:
-					response = 'ERROR - Please check your input'
-					continue
+			elif action == '@play' and len(text) == 1 and text[0] == NickName and gamer is None:
 				try:
-					int(text[0])
-					times -= 1
-					if int(text[0]) == randnum:
-						response = 'CORRECT' + ' (' + str(times) + ')'
-						gamer, times = None, 5
-					else:
-						response = 'Higher' + ' (' + str(times) + ')' if int(text[0]) < randnum else 'Lower' + ' (' + str(times) + ')'
-						if times == 0:
-							response = 'You lose! The answer is ' + str(randnum) + ' (' + str(times) + ')'
-							gamer, times = None, 5
-				except ValueError:
-					response = 'ERROR: ' + text[0] + ' is not a number'
+					response, gamer, randnum, times = play(gamer, username)
+				except:
+					response = None
+			elif action == '@guess' and username == gamer:
+				try:
+					response, gamer, times = guess(randnum, text, gamer, times)
+				except Exception as err:
+					response = str(err)
 			elif action == '@youtube':
 				if not text:
-					response = 'ERROR: Please Check Your Input'
+					response = 'ERROR: Please check your Iiput.'
 				else:
 					response = Search('youtube', '+'.join(text))
-			elif action == '@ruten':
-				if not text:
-					response = 'ERROR: Please Check Your Input'
-				else:
-					response = Search('ruten', '+'.join(text))
 			elif action == '@help':
 				response = HELP
 		print(respformat(response, username))
