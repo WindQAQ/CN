@@ -8,7 +8,7 @@ SearchPrefix = {
 }
 
 SearchClass = {
-	'youtube': 'yt-uix-tile-link',
+	'youtube': 'yt-uix-sessionlink yt-uix-tile-link yt-ui-ellipsis yt-ui-ellipsis-2 spf-link ',
 }
 
 def formatUrl(action, query):
@@ -16,26 +16,21 @@ def formatUrl(action, query):
 	prefix = SearchPrefix[action]
 	return '{}{}'.format(prefix, query)
 
-def getHTML(url):
-	with urllib.request.urlopen(url) as res:
-		html = res.read()
-		soup = BeautifulSoup(html, 'lxml')
-		return soup
-
-def findItem(action, soup):	
-	for match in soup.find_all('a', class_=SearchClass[action], limit=2):
-		if action == 'youtube':
-			if 'https://googleads' in  match['href']:
-				continue
-			title, link = match['title'], '{}{}'.format(YOUTUBE, match['href'])
+def findItem(action, soup):
+	match = soup.find('a', class_=SearchClass[action])
+	if action == 'youtube':
+		# if not match['href'].startswith('/watch?v='):
+		title, link = match['title'], '{}{}'.format(YOUTUBE, match['href'])
 		return '{} {}'.format(title, link)
 	return None
 
 def Search(action, query):
 	try:
 		url = formatUrl(action, query)
-		soup = getHTML(url)
-		item = findItem(action, soup)
-		return item
+		with urllib.request.urlopen(url) as res:
+			html = res.read()
+			soup = BeautifulSoup(html, 'lxml')
+			item = findItem(action, soup)
+			return item
 	except:
-		return 'No corresponding item'
+		return 'No corresponding item.'
