@@ -89,7 +89,7 @@ def IRCRobot():
 	gamer, randnum, times = None, None, None
 
 	while True:
-		IRCMsg = IRCSocket.recv(Bufsize).decode()
+		IRCMsg = IRCSocket.recv(Bufsize).decode().strip('\r\n')
 		print(IRCMsg)
 		if not IRCMsg:
 			continue
@@ -112,7 +112,8 @@ def IRCRobot():
 			action = msg[3][1:] # remove ':'
 			text = msg[4:]
 			if action == '@repeat':
-				response = IRCMsg[IRCMsg.find('@repeat')+8:-2]
+				start = IRCMsg.find('@repeat ')
+				response = IRCMsg[start+8:] if start != -1 else None
 			elif action == '@cal':
 				try:
 					response = str(evalExp(' '.join(text)))
