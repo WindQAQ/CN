@@ -30,6 +30,7 @@ UNARY = {
 
 SYNTAX_ERROR = 'Error: Syntax error! Please check your input.'
 DIVISION_BY_ZERO = 'Error: Division by zero.'
+OVERFLOW = 'Error: Overflow.'
 
 def Str2Number(str):
 	try:
@@ -50,22 +51,25 @@ def doOp(op, operand):
 		if len(operand) < 2:
 			raise Exception(SYNTAX_ERROR)
 		else:
-			top = operand.pop()
-			if op == '+':
-				operand[-1] += top
-			elif op == '-':
-				operand[-1] -= top
-			elif op == '*':
-				operand[-1] *= top
-			elif op == '/':
-				try:
-					operand[-1] /= top
-				except:
-					raise Exception(DIVISION_BY_ZERO)
-			elif op == '^':
-				operand[-1] **= top
-			else:
-				raise Exception(SYNTAX_ERROR)
+			try:
+				top = operand.pop()
+				if op == '+':
+					operand[-1] += top
+				elif op == '-':
+					operand[-1] -= top
+				elif op == '*':
+					operand[-1] *= top
+				elif op == '/':
+					try:
+						operand[-1] /= top
+					except:
+						raise Exception(DIVISION_BY_ZERO)
+				elif op == '^':
+					operand[-1] **= top
+				else:
+					raise Exception(SYNTAX_ERROR)
+			except:
+				raise Exception(OVERFLOW)
 
 def processOp(op, operator, operand):
 	while operator and PRIORITY[op] <= PRIORITY[operator[-1]]:
