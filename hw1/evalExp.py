@@ -34,12 +34,9 @@ OVERFLOW = 'Error: Overflow.'
 
 def Str2Number(str):
 	try:
-		return int(str)
+		return float(str)
 	except ValueError:
-		try:
-			return float(str)
-		except ValueError:
-			raise Exception(SYNTAX_ERROR)
+		raise Exception(SYNTAX_ERROR)
 
 def doOp(op, operand):
 	if op == 'P' or op == 'N':
@@ -60,14 +57,13 @@ def doOp(op, operand):
 				elif op == '*':
 					operand[-1] *= top
 				elif op == '/':
-					try:
-						operand[-1] /= top
-					except:
-						raise Exception(DIVISION_BY_ZERO)
+					operand[-1] /= top
 				elif op == '^':
 					operand[-1] **= top
 				else:
 					raise Exception(SYNTAX_ERROR)
+			except ZeroDivisionError:
+				raise Exception(DIVISION_BY_ZERO)
 			except:
 				raise Exception(OVERFLOW)
 
