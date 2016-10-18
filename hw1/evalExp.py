@@ -87,7 +87,7 @@ def processPa(operator, operand):
 		else:
 			doOp(top, operand)
 	if not flag:
-		raise Exception('UNBALANCED PARENTHESES')
+		raise Exception(SYNTAX_ERROR)
 
 def parseExp(exp):
 	# exp = exp.replace(' ', '')
