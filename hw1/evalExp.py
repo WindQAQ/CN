@@ -29,7 +29,7 @@ UNARY = {
 }
 
 SYNTAX_ERROR = 'Error: Syntax error! Please check your input.'
-DIVISON_BY_ZERO = 'Error: Division by error.'
+DIVISION_BY_ZERO = 'Error: Division by zero.'
 
 def Str2Number(str):
 	try:
