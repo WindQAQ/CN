@@ -90,18 +90,17 @@ def IRCRobot():
 
 	while True:
 		IRCMsg = IRCSocket.recv(Bufsize).decode().strip('\r\n')
-		print(IRCMsg)
 		if not IRCMsg:
 			continue
-		
+		print(IRCMsg)	
 		msg = IRCMsg.split()
 		# PING-PONG response to server
 		if msg[0] == 'PING':
 			sendMsg('PONG ' + msg[1])
+			print('receive PING')
 			continue
 
 		username, IRCCommand = msg[0].split('!', 1)[0][1:], msg[1]
-		print(username, IRCCommand)
 		response = None
 
 		# say hi while joining the channel
@@ -136,8 +135,14 @@ def IRCRobot():
 					response = Search('youtube', '+'.join(text))
 			elif action == '@help':
 				response = HELP
-		print(respformat(response, username))
-		sendMsg(respformat(response, username))
+			
+			response = respformat(response, username)
+			sendMsg(response)
+			print('\n>-------------------------<\n')
+			print(IRCMsg)
+			print(username, IRCCommand, action)
+			print(response)
+			print('\n>-------------------------<\n')
 
 if __name__ == '__main__':
 	IRCRobot()
