@@ -28,6 +28,9 @@ UNARY = {
 	'-': 'N'
 }
 
+SYNTAX_ERROR = 'Error: Syntax error! Please check your input.'
+DIVISON_BY_ZERO = 'Error: Division by error.'
+
 def Str2Number(str):
 	try:
 		return int(str)
@@ -35,17 +38,17 @@ def Str2Number(str):
 		try:
 			return float(str)
 		except ValueError:
-			raise Exception('SYNTAX ERROR')
+			raise Exception(SYNTAX_ERROR)
 
 def doOp(op, operand):
 	if op == 'P' or op == 'N':
 		if not operand:
-			raise Exception('SYNTAX ERROR')
+			raise Exception(SYNTAX_ERROR)
 		else:
 			operand[-1] = operand[-1] if op == 'P' else -operand[-1]
 	else:
 		if len(operand) < 2:
-			raise Exception('SYNTAX ERROR')
+			raise Exception(SYNTAX_ERROR)
 		else:
 			top = operand.pop()
 			if op == '+':
@@ -58,11 +61,11 @@ def doOp(op, operand):
 				try:
 					operand[-1] /= top
 				except:
-					raise Exception('DIVISION BY ZERO')
+					raise Exception(DIVISION_BY_ZERO)
 			elif op == '^':
 				operand[-1] **= top
 			else:
-				raise Exception('SYNTAX ERROR')
+				raise Exception(SYNTAX_ERROR)
 
 def processOp(op, operator, operand):
 	while operator and PRIORITY[op] <= PRIORITY[operator[-1]]:
@@ -109,7 +112,7 @@ def parseExp(exp):
 			else:
 				expParse.append(exp[i])
 		else:
-			raise Exception('SYNTAX ERROR')
+			raise Exception(SYNTAX_ERROR)
 
 		i += 1
 		flag = True
@@ -133,7 +136,7 @@ def evalExp(exp):
 		doOp(operator.pop(), operand)
 
 	if len(operand) != 1:
-		raise Exception('SYNTAX ERROR')
+		raise Exception(SYNTAX_ERROR)
 
 	return operand[-1]
 
