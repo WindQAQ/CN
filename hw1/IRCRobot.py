@@ -18,7 +18,7 @@ Key = Config['CHAN_KEY']
 
 Bufsize = 4096
 PRIVMSG = 'PRIVMSG ' + Channel + ' :'
-HELP = ['@repeat <String>', '@cal <Expression>', '@play <Robot Name>', '@guess <Integer>', '@youtube <String>']
+HELP = ['@repeat <String>', '@cal <Expression>', '@play <Robot Name>', '@guess <Integer>', '@youtube <String>', '@books <String>']
 
 GAME_START = 'Start! (0-100 with 8 times)'
 GAME_OVER = 'GAME OVER! The answer is'
