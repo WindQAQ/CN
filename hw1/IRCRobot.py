@@ -92,7 +92,6 @@ def IRCRobot():
 		IRCMsg = IRCSocket.recv(Bufsize).decode().strip('\r\n')
 		if not IRCMsg:
 			continue
-		print(IRCMsg)	
 		msg = IRCMsg.split()
 		# PING-PONG response to server
 		if msg[0] == 'PING':
@@ -101,7 +100,7 @@ def IRCRobot():
 			continue
 
 		username, IRCCommand = msg[0].split('!', 1)[0][1:], msg[1]
-		response = None
+		action, response = None, None
 
 		# say hi while joining the channel
 		if username == NickName and IRCCommand == 'JOIN':
@@ -128,21 +127,22 @@ def IRCRobot():
 					response, gamer, times = guess(randnum, text, gamer, times)
 				except Exception as err:
 					response = str(err)
-			elif action == '@youtube':
+			elif action == '@youtube' or action == '@books':
 				if not text:
 					response = 'ERROR: Please check your Iiput.'
 				else:
-					response = Search('youtube', '+'.join(text))
+					response = Search(action[1:], '+'.join(text))
 			elif action == '@help':
 				response = HELP
 			
-			response = respformat(response, username)
-			sendMsg(response)
-			print('\n>-------------------------<\n')
-			print(IRCMsg)
-			print(username, IRCCommand, action)
-			print(response)
-			print('\n>-------------------------<\n')
+		response = respformat(response, username)
+		sendMsg(response)
+		print('\n>-------------------------<\n')
+		print('--> MSG: ', IRCMsg)
+		print('--> USER: ' , username)
+		print('--> ACT: ', action)
+		print('--> RES: ', response)
+		print('\n>-------------------------<\n')
 
 if __name__ == '__main__':
 	IRCRobot()
