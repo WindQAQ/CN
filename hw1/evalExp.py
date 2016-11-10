@@ -2,6 +2,14 @@ import sys, os
 
 LeftParenthesis, RightParenthesis = '(', ')'
 
+BINARYOP = {
+	'+': True,
+	'-': True,
+	'*': True,
+	'/': True,
+	'^': True
+}
+
 OPERATOR = {
 	'(': True,
 	')': True,
@@ -122,7 +130,10 @@ def parseExp(exp):
 def evalExp(exp):
 	expParse = parseExp(exp)
 	operator, operand = [], []
+	pre = None
 	for s in expParse:
+		if s in BINARYOP and pre in BINARYOP:
+			raise Exception(SYNTAX_ERROR)
 		if s == LeftParenthesis:
 			operator.append(s)
 		elif s == RightParenthesis:
@@ -131,6 +142,7 @@ def evalExp(exp):
 			processOp(s, operator, operand)
 		else:
 			operand.append(s)
+		pre = s
 	
 	while operator:
 		doOp(operator.pop(), operand)
