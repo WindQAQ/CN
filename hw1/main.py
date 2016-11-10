@@ -20,7 +20,7 @@ Bufsize = 4096
 PRIVMSG = 'PRIVMSG ' + Channel + ' :'
 HELP = ['@repeat <String>', '@cal <Expression>', '@play <Robot Name>', '@guess <Integer>', '@youtube <String>', '@books <String>']
 
-GAME_START = 'Start! (0-100 with 8 times)'
+GAME_START = 'Start! (1-100 with 5 times)'
 GAME_OVER = 'GAME OVER! The answer is'
 HL = {
 	True: 'Higher!',
@@ -53,7 +53,7 @@ def play(gamer, user):
 		raise Exception
 
 	res = GAME_START
-	return res, user, random.randint(0, 100), 8
+	return res, user, random.randint(1, 100), 5
 
 def guess(ans, plain, gamer, times):
 	if len(plain) != 1:
@@ -64,11 +64,11 @@ def guess(ans, plain, gamer, times):
 		res = ''
 		if ans == num:
 			res = 'CORRECT!'
-			gamer, times = None, 8
+			gamer, times = None, 5
 		else:
 			if times == 0:
 				res = '{} {}.'.format(GAME_OVER, ans)
-				gamer, times = None, 8
+				gamer, times = None, 5
 			else:
 				res = '{} ({})'.format(HL[ans > num], times)
 		return res, gamer, times
