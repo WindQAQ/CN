@@ -132,7 +132,7 @@ def evalExp(exp):
 	operator, operand = [], []
 	pre = None
 	for s in expParse:
-		if (s in BINARYOP or s == ')') and pre in BINARYOP:
+		if ((s in BINARYOP or s == ')') and pre in BINARYOP) or (s in BINARYOP and (pre in BINARYOP or pre == '(')):
 			raise Exception(SYNTAX_ERROR)
 		if s == LeftParenthesis:
 			operator.append(s)
