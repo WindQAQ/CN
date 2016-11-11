@@ -2,6 +2,18 @@ import sys, os
 
 LeftParenthesis, RightParenthesis = '(', ')'
 
+ALL = {
+	'(': True,
+	'+': True,
+	'-': True,
+	'*': True,
+	'/': True,
+	'P': True,
+	'N': True,
+	'^': True,
+	')': True
+}
+
 BINARYOP = {
 	'+': True,
 	'-': True,
@@ -133,6 +145,10 @@ def evalExp(exp):
 	pre = None
 	for s in expParse:
 		if ((s in BINARYOP or s == ')') and pre in BINARYOP) or (s in BINARYOP and (pre in BINARYOP or pre == '(')):
+			raise Exception(SYNTAX_ERROR)
+		if pre is None and (s in BINARYOP or s == ')'):
+			raise Exception(SYNTAX_ERROR)
+		if pre is not None and (pre not in ALL and s not in ALL):
 			raise Exception(SYNTAX_ERROR)
 		if s == LeftParenthesis:
 			operator.append(s)
