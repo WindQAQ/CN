@@ -10,37 +10,48 @@
 #define BUF_LEN 1024
 #define PKT_LEN 4096
 
-typedef struct packet {
+typedef struct header {
 	char srcIP[IP_LEN];
 	int srcPort;
 	char destIP[IP_LEN];
 	int destPort;
 	int type;
 	int seq;
-	char data[BUF_LEN];
-} Packet;
+} Header;
 
-void make_packet(int type, int seq, char *data, char* pkt)
+void make_packet(Header* h, char* data, char* pkt)
 {
 	memset(pkt, 0, sizeof(pkt));
-	sprintf(pkt, "%d\n%d\n%s", type, seq, data);
+	sprintf(pkt, "%s\n%d\n%s\n%d\n%d\n%d\n%s", h->srcIP, h->srcPort, h->destIP, h->destPort, 
+											   h->type, h->seq, data);
 }
 
 void print_packet(char* pkt)
 {
-	int type, seq;
+	Header h;
 	char *data;
-	sscanf(pkt, "%d\n%d", &type, &seq);
+	sscanf(pkt, "%s\n%d\n%s\n%d\n%d\n%d", 
+                  h.srcIP, &h.srcPort, h.destIP, &h.destPort, &h.type, &h.seq);
 	
 	data = strchr(pkt, '\n');
-	data = strchr(data+1, '\n');
+	for (int i = 0; i < 5; i++)
+		data = strchr(data+1, '\n');
 
-	printf("Type: %d\n", type);
-	printf("Seq: %d\n", seq);
-	printf("Data:\n%s\n", data+1);
+	printf("srcIP: %s, srcPort: %d\n", h.srcIP, h.srcPort);
+	printf("destIP: %s, destPort: %d\n", h.destIP, h.destPort);
+	printf("type: %d, seq: %d\n", h.type, h.seq);
+	printf("=============================================\n");
+	printf("%s\n", data+1);
 }
 
-void extract_packet(char* pkt)
+void extract_packet(Header* h, char* data, char* pkt)
 {
+	sscanf(pkt, "%s\n%d\n%s\n%d\n%d\n%d", 
+                  h->srcIP, &h->srcPort, h->destIP, &h->destPort, &h->type, &h->seq);
 
+	memset(data, 0, sizeof(data));
+	data = strchr(pkt, '\n');
+	for (int i = 0; i < 5; i++)
+		data = strchr(data+1, '\n');
+	data = data+1;
 }
