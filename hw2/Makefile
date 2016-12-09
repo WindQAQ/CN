@@ -2,17 +2,16 @@ CC=gcc
 CFLAGS=-O2 -std=c99
 
 TARGET=sender agent receiver
-PACKET=packet.h
 
 all: $(TARGET)
 
-sender: sender.c $(PACKET)
+sender: sender.c
 	$(CC) $(CFLAGS) $< -o $@
 
-agent: agent.c $(PACKET)
+agent: agent.c
 	$(CC) $(CFLAGS) $< -o $@
 
-receiver: receiver.c $(PACKET)
+receiver: receiver.c
 	$(CC) $(CFLAGS) $< -o $@
 
 clean:
