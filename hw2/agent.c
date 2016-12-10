@@ -20,41 +20,41 @@ char file_path[BUF_LEN];
 int main(int argc, char* argv[])
 {
 	/* 0 for sender, 1 for receiver */
-	int socket_fd[2];
-	struct sockaddr_in agent_addr[2];
+	int socket_fd;
+	struct sockaddr_in my_addr;
 
 	/* create and bind socket */
-	const int PORT[] = {AGENT_SENDER_PORT, AGENT_RECEIVER_PORT};
-	for (int i = 0; i < sizeof(PORT)/sizeof(PORT[0]); i++) {
-		if ((socket_fd[i] = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) < -1) {
-			die("socket[0] failed");
-		}
-		memset((char *)&agent_addr[i], 0, sizeof(agent_addr[i]));
-		agent_addr[i].sin_family = AF_INET;
-		agent_addr[i].sin_port = htons(PORT[i]);
-		agent_addr[i].sin_addr.s_addr = htonl(INADDR_ANY);
-		if (bind(socket_fd[i], (struct sockaddr *)&agent_addr[i], sizeof(agent_addr[i])) < 0) {
-			die("bind failed");
-		}
+	if ((socket_fd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0) {
+		die("socket failed");
+	}
+	memset((char *)&my_addr, 0, sizeof(my_addr));
+	my_addr.sin_family = AF_INET;
+	my_addr.sin_port = htons(AGENT_PORT);
+	my_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+	if (bind(socket_fd, (struct sockaddr *)&my_addr, sizeof(my_addr)) < 0) {
+		die("bind failed");
 	}
 
-	char rcv_pkt[PKT_LEN];
+	Packet rcv_pkt;
 	int rcv_len;
-	struct sockaddr_in addr;
-	int addr_len = sizeof(addr);
+	struct sockaddr_in src_addr, dest_addr;
+	int src_addr_len = sizeof(src_addr);
+	int dest_addr_len = sizeof(dest_addr);
 	while (1) {
-		if ((rcv_len = recvfrom(socket_fd[0], rcv_pkt, PKT_LEN, 0, (struct sockaddr*)&addr, &addr_len)) < 0) {
+		if ((rcv_len = recvfrom(socket_fd, &rcv_pkt, sizeof(Packet), 0, (struct sockaddr*)&src_addr, &src_addr_len)) < 0) {
 			die("recvfrom failed");
 		}
-		printf("%s\n", rcv_pkt);
-		if (sendto(socket_fd[0], rcv_pkt, rcv_len, 0, (struct sockaddr*)&addr, addr_len) < 0) {
+
+		print_pkt(&rcv_pkt);
+		memcpy(&dest_addr, &rcv_pkt.h.dest, sizeof(struct sockaddr_in));
+
+		if (sendto(socket_fd, &rcv_pkt, sizeof(Packet), 0, (struct sockaddr*)&dest_addr, dest_addr_len) < 0) {
 			die("sendto failed");
 		}
 
 	}
 
-	close(socket_fd[0]);
-	close(socket_fd[1]);
+	close(socket_fd);
 
 	return 0;
 }
