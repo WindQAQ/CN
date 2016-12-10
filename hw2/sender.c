@@ -56,13 +56,13 @@ int main(int argc, char* argv[])
 	inet_pton(AF_INET, destIP, &(dest_addr.sin_addr));
 
 	/* Construct header of packet*/
-	Packet rcv_pkt, sd_pkt;
-	Header sd_h;
-	memset(&sd_h, 0, sizeof(Header));
-	memcpy(&sd_h.src, &my_addr, sizeof(struct sockaddr_in));
-	memcpy(&sd_h.dest, &dest_addr, sizeof(struct sockaddr_in));
-	sd_h.type = DATA;
-	sd_h.seq = seq;
+	Packet rcv_pkt, snd_pkt;
+	Header snd_h;
+	memset(&snd_h, 0, sizeof(Header));
+	memcpy(&snd_h.src, &my_addr, sizeof(struct sockaddr_in));
+	memcpy(&snd_h.dest, &dest_addr, sizeof(struct sockaddr_in));
+	snd_h.type = DATA;
+	snd_h.seq = seq;
 
 	int fd;
 	if ((fd = open(file_path, O_RDONLY)) < 0) die("open file failed");
@@ -74,23 +74,23 @@ int main(int argc, char* argv[])
 		if ((nbytes = read(fd, data, BUF_LEN)) < 0) die("read file failed");
 		if (nbytes == 0) {
 			memset(data, 0, BUF_LEN);
-			sd_h.type = FIN;
+			snd_h.type = FIN;
 		}
 
-		sd_h.seq = seq;
-		make_pkt(&sd_h, data, nbytes, &sd_pkt);	
-		if (sendto(socket_fd, &sd_pkt, sizeof(Packet), 0, (struct sockaddr*)&agent_addr, agent_addr_len) < 0) {
+		snd_h.seq = seq;
+		make_pkt(&snd_h, data, nbytes, &snd_pkt);	
+		if (sendto(socket_fd, &snd_pkt, sizeof(Packet), 0, (struct sockaddr*)&agent_addr, agent_addr_len) < 0) {
 			die("sendto failed");
 		}
-		if (sd_pkt.h.type == DATA) {
+		if (snd_pkt.h.type == DATA) {
 			printf("send\tdata\t#%d\n", seq);
 			seq++;
 		}
-		else if (sd_pkt.h.type == FIN) {
+		else if (snd_pkt.h.type == FIN) {
 			printf("send\tfin\n");
 		}
 		else {
-			fprintf(stderr, "send strange type: %s\n", TYPE[sd_pkt.h.type]);
+			fprintf(stderr, "send strange type: %s\n", TYPE[snd_pkt.h.type]);
 			exit(1);
 		}
 
