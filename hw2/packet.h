@@ -14,7 +14,7 @@
 #define FIN 2
 #define FINACK 3
 
-const char* TYPE[] = {"DATA", "ACK", "FIN", "FINACK"};
+const char* TYPE[] = {"data", "ack", "fin", "finack"};
 
 typedef struct header {
 	struct sockaddr_in src;
@@ -46,5 +46,7 @@ void print_pkt(Packet* pkt)
 	printf("srcIP: %s, srcPort: %d\n", srcIP, ntohs(pkt->h.src.sin_port));
 	printf("destIP: %s, destPort: %d\n", destIP, ntohs(pkt->h.dest.sin_port));
 	printf("type: %s, seq: %d, data length: %d\n", TYPE[pkt->h.type], pkt->h.seq, pkt->h.len);
-	printf("data: \n%s\n", pkt->data);
+	if (pkt->h.type == DATA) {
+		printf("data: \n%s\n", pkt->data);
+	}
 }

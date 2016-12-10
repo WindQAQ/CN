@@ -40,18 +40,29 @@ int main(int argc, char* argv[])
 	struct sockaddr_in src_addr, dest_addr;
 	int src_addr_len = sizeof(src_addr);
 	int dest_addr_len = sizeof(dest_addr);
+	int type;
 	while (1) {
 		if ((rcv_len = recvfrom(socket_fd, &rcv_pkt, sizeof(Packet), 0, (struct sockaddr*)&src_addr, &src_addr_len)) < 0) {
 			die("recvfrom failed");
 		}
+		type = rcv_pkt.h.type;
+		if ((type == DATA) || type == ACK) {
+			printf("get\t%s\t#%d\n", TYPE[type], rcv_pkt.h.seq);
+		}
+		else {
+			printf("get\t%s\n", TYPE[type]);
+		}
 
-		print_pkt(&rcv_pkt);
 		memcpy(&dest_addr, &rcv_pkt.h.dest, sizeof(struct sockaddr_in));
-
 		if (sendto(socket_fd, &rcv_pkt, sizeof(Packet), 0, (struct sockaddr*)&dest_addr, dest_addr_len) < 0) {
 			die("sendto failed");
 		}
-
+		if ((type == DATA) || type == ACK) {
+			printf("fwd\t%s\t#%d\n", TYPE[type], rcv_pkt.h.seq);
+		}
+		else {
+			printf("fwd\t%s\n", TYPE[type]);
+		}
 	}
 
 	close(socket_fd);

@@ -17,6 +17,8 @@ char destIP[BUF_LEN];
 int destPort, srcPort;
 char file_path[BUF_LEN];
 
+static int seq = 1;
+
 int main(int argc, char* argv[])
 {
 	int v;
@@ -60,30 +62,52 @@ int main(int argc, char* argv[])
 	memcpy(&sd_h.src, &my_addr, sizeof(struct sockaddr_in));
 	memcpy(&sd_h.dest, &dest_addr, sizeof(struct sockaddr_in));
 	sd_h.type = DATA;
-	sd_h.seq = 0;
+	sd_h.seq = seq;
 
 	int fd;
 	if ((fd = open(file_path, O_RDONLY)) < 0) die("open file failed");
 	char data[BUF_LEN];
-	int nbytes;
-
+	int nbytes, done;
 	int rcv_len;
 	while (1) {
 		memset(data, 0, BUF_LEN);
 		if ((nbytes = read(fd, data, BUF_LEN)) < 0) die("read file failed");
-		if (nbytes == 0) break;
+		if (nbytes == 0) {
+			memset(data, 0, BUF_LEN);
+			sd_h.type = FIN;
+		}
 
+		sd_h.seq = seq;
 		make_pkt(&sd_h, data, nbytes, &sd_pkt);	
-		print_pkt(&sd_pkt);
-
 		if (sendto(socket_fd, &sd_pkt, sizeof(Packet), 0, (struct sockaddr*)&agent_addr, agent_addr_len) < 0) {
 			die("sendto failed");
 		}
-	
+		if (sd_pkt.h.type == DATA) {
+			printf("send\tdata\t#%d\n", seq);
+			seq++;
+		}
+		else if (sd_pkt.h.type == FIN) {
+			printf("send\tfin\n");
+		}
+		else {
+			fprintf(stderr, "send strange type: %s\n", TYPE[sd_pkt.h.type]);
+			exit(1);
+		}
+
 		if ((rcv_len = recvfrom(socket_fd, &rcv_pkt, sizeof(Packet), 0, (struct sockaddr*)&agent_addr, &agent_addr_len)) < 0) {
 			die("recvfrom failed");
 		}
-		print_pkt(&rcv_pkt);
+		if (rcv_pkt.h.type == ACK) {
+			printf("recv\tack\t#%d\n", rcv_pkt.h.seq);
+		}
+		else if (rcv_pkt.h.type == FINACK) {
+			printf("recv\tfinack\n");
+			break;
+		}
+		else {
+			fprintf(stderr, "receive strange type: %s\n", TYPE[rcv_pkt.h.type]);
+			exit(1);
+		}
 	}
 
 	close(socket_fd);

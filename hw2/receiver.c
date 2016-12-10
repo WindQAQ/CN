@@ -42,24 +42,45 @@ int main(int argc, char* argv[])
 	struct sockaddr_in addr;
 	int addr_len = sizeof(addr);
 	Packet rcv_pkt, sd_pkt;
+	int type;
 	while (1) {
 		if ((rcv_len = recvfrom(socket_fd, &rcv_pkt, sizeof(Packet), 0, (struct sockaddr*)&addr, &addr_len)) < 0) {
 			die("recvfrom failed");
 		}
+		
+		type = rcv_pkt.h.type;
+		if (type == DATA) {
+			printf("recv\tdata\t#%d\n", rcv_pkt.h.seq);
+			if (write(fd, rcv_pkt.data, rcv_pkt.h.len) < 0) die("write to file failed");
+			sd_pkt.h.type = ACK;		
+		}
+		else if (type == FIN) {
+			sd_pkt.h.type = FINACK;
+		}
+		else {
+			fprintf(stderr, "receive strange type: %s\n", TYPE[sd_pkt.h.type]);
+			exit(1);
+		}
 
-		if (write(fd, rcv_pkt.data, rcv_pkt.h.len) < 0) die("write to file failed");
-
-		memcpy(&sd_pkt, &rcv_pkt, sizeof(Packet));
 		memcpy(&sd_pkt.h.src, &rcv_pkt.h.dest, sizeof(struct sockaddr_in));
 		memcpy(&sd_pkt.h.dest, &rcv_pkt.h.src, sizeof(struct sockaddr_in));
-		sd_pkt.h.type = ACK;
-		sd_pkt.h.seq = 1;		
-
+		sd_pkt.h.len = 0;
+		sd_pkt.h.seq = rcv_pkt.h.seq;
+		memset(sd_pkt.data, 0, BUF_LEN);
 		if (sendto(socket_fd, &sd_pkt, sizeof(Packet), 0, (struct sockaddr*)&addr, addr_len) < 0) {
 			die("sendto failed");
 		}
-	
-		print_pkt(&rcv_pkt);
+		if (sd_pkt.h.type == ACK) {
+			printf("send\tack\t#%d\n", sd_pkt.h.seq);
+		}
+		else if (sd_pkt.h.type == FINACK) {
+			printf("send\tfinack\n");
+			break;
+		}
+		else {
+			fprintf(stderr, "send strange type: %s\n", TYPE[sd_pkt.h.type]);
+			exit(1);
+		}
 	}
 
 	close(socket_fd);
