@@ -8,16 +8,24 @@
 
 #include <unistd.h>
 #include <fcntl.h>
+#include <sys/time.h>
+#include <errno.h>
 
 #include "utility.h"
 #include "agent.h"
 #include "packet.h"
 
+#define THRES 16
+
+typedef struct window {
+	Packet pkt;
+	int acked;
+	int sent;
+} Window;
+
 char destIP[BUF_LEN];
 int destPort, srcPort;
 char file_path[BUF_LEN];
-
-static int seq = 1;
 
 int main(int argc, char* argv[])
 {
@@ -56,57 +64,126 @@ int main(int argc, char* argv[])
 	inet_pton(AF_INET, destIP, &(dest_addr.sin_addr));
 
 	/* Construct header of packet*/
-	Packet rcv_pkt, snd_pkt;
 	Header snd_h;
 	memset(&snd_h, 0, sizeof(Header));
 	memcpy(&snd_h.src, &my_addr, sizeof(struct sockaddr_in));
 	memcpy(&snd_h.dest, &dest_addr, sizeof(struct sockaddr_in));
 	snd_h.type = DATA;
-	snd_h.seq = seq;
 
+	/* set receive timeout on socket: 1 second  */
+	struct timeval timeout;
+	memset(&timeout, 0, sizeof(struct timeval));
+	timeout.tv_sec = 1;
+	if (setsockopt(socket_fd, SOL_SOCKET, SO_RCVTIMEO, (struct timeval*)&timeout, sizeof(struct timeval))) die("setsockopt failed");
+
+	/* open source file */
 	int fd;
 	if ((fd = open(file_path, O_RDONLY)) < 0) die("open file failed");
 	char data[BUF_LEN];
-	int nbytes, done;
-	int rcv_len;
+	int nbytes;
+	
+	/* read data and pack data */
+	int init_size = 2<<10, size;
+	Window *snd_pkt = (Window*) malloc(init_size * sizeof(Window));
+	int total_pkt = 0;
 	while (1) {
 		memset(data, 0, BUF_LEN);
 		if ((nbytes = read(fd, data, BUF_LEN)) < 0) die("read file failed");
-		if (nbytes == 0) {
-			memset(data, 0, BUF_LEN);
-			snd_h.type = FIN;
+		if (nbytes == 0) break;
+		if (total_pkt == size) {
+			size *= 2;
+			Window *new_mem = realloc(snd_pkt, size*sizeof(Window));
+			if (new_mem == NULL) die("file is too large");
+			snd_pkt = new_mem;
 		}
+		snd_h.seq = total_pkt + 1;
+		make_pkt(&snd_h, data, nbytes, &snd_pkt[total_pkt].pkt);
+		snd_pkt[total_pkt].acked = 0;
+		snd_pkt[total_pkt].sent = 0;
+		total_pkt++;
+	}
 
-		snd_h.seq = seq;
-		make_pkt(&snd_h, data, nbytes, &snd_pkt);	
-		if (sendto(socket_fd, &snd_pkt, sizeof(Packet), 0, (struct sockaddr*)&agent_addr, agent_addr_len) < 0) {
-			die("sendto failed");
+	/* send data and receive ack */
+	int rcv_len;
+	Packet rcv_pkt;
+	int base = 1, win_size = 1, thres = THRES, done = 0;
+	while (!done) {
+		/* send packets */
+		int total_snd = 0;
+		for (int i = base; i < base + win_size && i <= total_pkt; i++) {
+			if (sendto(socket_fd, &snd_pkt[i-1].pkt, sizeof(Packet), 0, (struct sockaddr*)&agent_addr, agent_addr_len) < 0) {
+				die("sendto failed");
+			}
+			printf("%s\tdata\t#%d,\twinSize = %d\n", (snd_pkt[i].sent)? "resnd": "send", snd_pkt[i].pkt.h.seq, win_size);
+			snd_pkt[i-1].sent = 1;
+			total_snd++;
 		}
-		if (snd_pkt.h.type == DATA) {
-			printf("send\tdata\t#%d\n", seq);
-			seq++;
+		
+		/* receive packets */
+		int total_rcv = 0;
+		while (total_rcv < total_snd) {
+			if ((rcv_len = recvfrom(socket_fd, &rcv_pkt, sizeof(Packet), 0, (struct sockaddr*)&agent_addr, &agent_addr_len)) < 0) {
+				if (errno == EAGAIN || errno == EWOULDBLOCK) {
+					break;
+				}
+				else {
+					die("recvfrom failed");
+				}
+			}
+			if (rcv_len == 0) continue;
+			int rcv_ack = rcv_pkt.h.seq;
+			if (rcv_ack < base || rcv_ack >= base + win_size) {
+				printf("ack out of range");
+				continue;
+			}
+			printf("recv\tack\t#%d\n", rcv_ack);
+			snd_pkt[rcv_ack-1].acked = 1;
+			total_rcv++;
 		}
-		else if (snd_pkt.h.type == FIN) {
-			printf("send\tfin\n");
+		if (total_rcv != total_snd) {
+			/* timeout */
+			thres = (win_size/2 > 1)? win_size: 1;
+			win_size = 1;
+			printf("time\tout,\tthreshold = %d\n", thres);
 		}
 		else {
-			fprintf(stderr, "send strange type: %s\n", TYPE[snd_pkt.h.type]);
-			exit(1);
+			/* all packets within window are acked */
+			win_size = (win_size < thres)? win_size*2: win_size+1;
 		}
+		/* find base */
+		for (int i = base; i <= total_pkt; i++) {
+			if (snd_pkt[i-1].acked == 0) {
+				base = i;
+				break;
+			}
+			if (i == total_pkt) done = 1;
+		}
+	}
 
+	/* send ack */
+	Packet ack;
+	snd_h.type = FIN;
+	snd_h.seq = 0;
+	make_pkt(&snd_h, NULL, 0, &ack);
+	while (1) {
+		if (sendto(socket_fd, &ack, sizeof(Packet), 0, (struct sockaddr*)&agent_addr, agent_addr_len) < 0) {
+			die("sendto failed");
+		}
+		printf("send\tfin\n");
 		if ((rcv_len = recvfrom(socket_fd, &rcv_pkt, sizeof(Packet), 0, (struct sockaddr*)&agent_addr, &agent_addr_len)) < 0) {
-			die("recvfrom failed");
+			if (errno == EAGAIN || errno == EWOULDBLOCK) {
+				continue;
+			}
+			else {
+				die("recvfrom failed");
+			}
 		}
-		if (rcv_pkt.h.type == ACK) {
-			printf("recv\tack\t#%d\n", rcv_pkt.h.seq);
-		}
-		else if (rcv_pkt.h.type == FINACK) {
+		if (rcv_pkt.h.type == FINACK) {
 			printf("recv\tfinack\n");
 			break;
 		}
 		else {
-			fprintf(stderr, "receive strange type: %s\n", TYPE[rcv_pkt.h.type]);
-			exit(1);
+			printf("stange type\n");
 		}
 	}
 
