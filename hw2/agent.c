@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -12,6 +13,10 @@
 #include "utility.h"
 #include "agent.h"
 #include "packet.h"
+
+#ifdef DROP
+#define DROP_RATE 0.1
+#endif
 
 char destIP[BUF_LEN];
 int destPort, srcPort;
@@ -35,6 +40,12 @@ int main(int argc, char* argv[])
 		die("bind failed");
 	}
 
+#ifdef DROP
+	srand(time(NULL));
+	int total_data = 0, total_drop = 0;
+	double loss_rate = 0.0;
+#endif
+
 	Packet rcv_pkt;
 	int rcv_len;
 	struct sockaddr_in src_addr, dest_addr;
@@ -42,6 +53,7 @@ int main(int argc, char* argv[])
 	int dest_addr_len = sizeof(dest_addr);
 	int type;
 	while (1) {
+		/* receiver packets */
 		if ((rcv_len = recvfrom(socket_fd, &rcv_pkt, sizeof(Packet), 0, (struct sockaddr*)&src_addr, &src_addr_len)) < 0) {
 			die("recvfrom failed");
 		}
@@ -53,15 +65,31 @@ int main(int argc, char* argv[])
 			printf("get\t%s\n", TYPE[type]);
 		}
 
-		memcpy(&dest_addr, &rcv_pkt.h.dest, sizeof(struct sockaddr_in));
-		if (sendto(socket_fd, &rcv_pkt, sizeof(Packet), 0, (struct sockaddr*)&dest_addr, dest_addr_len) < 0) {
-			die("sendto failed");
+		/* forward packets */
+		if (type == DATA) {
+#ifdef DROP
+			total_data++;
+			if ((double)rand()/RAND_MAX < DROP_RATE) {
+				total_drop++;
+				loss_rate = (double) total_drop/total_data;
+				printf("fwd\tdata\t#%d,\tloss rate = %f\n", rcv_pkt.h.seq, loss_rate);
+				continue;
+			} 
+			printf("fwd\tdata\t#%d,\tloss rate = %f\n", rcv_pkt.h.seq, loss_rate);
+#endif
+#ifndef DROP
+			printf("fwd\tdata\t#%d\n", rcv_pkt.h.seq);
+#endif
 		}
-		if ((type == DATA) || type == ACK) {
-			printf("fwd\t%s\t#%d\n", TYPE[type], rcv_pkt.h.seq);
+		else if (type == ACK) {
+			printf("fwd\tack\t#%d\n", rcv_pkt.h.seq);
 		}
 		else {
 			printf("fwd\t%s\n", TYPE[type]);
+		}
+		memcpy(&dest_addr, &rcv_pkt.h.dest, sizeof(struct sockaddr_in));
+		if (sendto(socket_fd, &rcv_pkt, sizeof(Packet), 0, (struct sockaddr*)&dest_addr, dest_addr_len) < 0) {
+			die("sendto failed");
 		}
 	}
 
