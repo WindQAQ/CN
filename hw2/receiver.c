@@ -12,18 +12,16 @@
 #include "utility.h"
 #include "packet.h"
 
-#define BUFFER_SIZE 32
-
 typedef struct buffer {
 	char data[BUF_LEN];
 	int len;
 	int used;
 } Buffer;
 
-int port;
+int port, buffer_size = 32;
 char file_path[BUF_LEN];
 
-Buffer buffer[BUFFER_SIZE];
+Buffer *buffer;
 int total_used = 0;
 int base = 1, seq = 1;
 
@@ -32,8 +30,9 @@ int main(int argc, char* argv[])
 	int v;
 	if ((v = find_arg(argc, argv, "-port")) != -1) port = atoi(argv[v+1]);
 	if ((v = find_arg(argc, argv, "-file")) != -1) strcpy(file_path, argv[v+1]);
+	if ((v = find_arg(argc, argv, "-buffer")) != -1) buffer_size = atoi(argv[v+1]);
 
-	memset(buffer, 0, BUFFER_SIZE*sizeof(Buffer));
+	buffer = calloc(buffer_size, sizeof(Buffer));
 
 	int socket_fd;
 	struct sockaddr_in my_addr;
@@ -52,7 +51,7 @@ int main(int argc, char* argv[])
 
 	/* open destination file */
 	int fd;
-	if ((fd = open(file_path, O_WRONLY | O_CREAT, 0644)) < 0) die("open file failed");
+	if ((fd = open(file_path, O_WRONLY | O_TRUNC | O_CREAT, 0644)) < 0) die("open file failed");
 	int rcv_len;
 
 	struct sockaddr_in addr;
@@ -68,15 +67,15 @@ int main(int argc, char* argv[])
 		seq = rcv_pkt.h.seq;
 
 		if (type == DATA) {
-			if (seq-base >= BUFFER_SIZE) {
+			if (seq-base >= buffer_size) {
 				/* out of range */
 				printf("drop\tdata\t#%d\n", seq);
-				if (total_used == BUFFER_SIZE) {
+				if (total_used == buffer_size) {
 					printf("flush\n");
-					for (int i = 0; i < BUFFER_SIZE; i++)
+					for (int i = 0; i < buffer_size; i++)
 						if (write(fd, buffer[i].data, buffer[i].len) < 0) die("write to file failed");
-					base += BUFFER_SIZE;
-					memset(buffer, 0, BUFFER_SIZE*sizeof(Buffer));
+					base += buffer_size;
+					memset(buffer, 0, buffer_size*sizeof(Buffer));
 					total_used = 0;
 				}
 				continue;
@@ -118,11 +117,12 @@ int main(int argc, char* argv[])
 		}
 	}
 
-	for (int i = 0; buffer[i].used == 1 && i < BUFFER_SIZE; i++) {
+	for (int i = 0; buffer[i].used == 1 && i < buffer_size; i++) {
 		if (i == 0) printf("flush\n");
 		if (write(fd, buffer[i].data, buffer[i].len) < 0) die("write to file failed");
 	}
 	
+	free(buffer);
 	close(socket_fd);
 
 	return 0;

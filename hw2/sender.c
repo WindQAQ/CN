@@ -15,8 +15,6 @@
 #include "agent.h"
 #include "packet.h"
 
-#define THRES 16
-
 typedef struct window {
 	Packet pkt;
 	int acked;
@@ -24,7 +22,7 @@ typedef struct window {
 } Window;
 
 char destIP[BUF_LEN];
-int destPort, srcPort;
+int destPort, srcPort, thres = 16;
 char file_path[BUF_LEN];
 
 int main(int argc, char* argv[])
@@ -34,6 +32,7 @@ int main(int argc, char* argv[])
 	if ((v = find_arg(argc, argv, "-destPort")) != -1)	destPort = atoi(argv[v+1]);
 	if ((v = find_arg(argc, argv, "-srcPort")) != -1)	srcPort = atoi(argv[v+1]);
 	if ((v = find_arg(argc, argv, "-file")) != -1)	strcpy(file_path, argv[v+1]);
+	if ((v = find_arg(argc, argv, "-thres")) != -1) thres = atoi(argv[v+1]);
 
 	int socket_fd;
 	struct sockaddr_in my_addr, dest_addr, agent_addr;
@@ -83,9 +82,9 @@ int main(int argc, char* argv[])
 	int nbytes;
 	
 	/* read data and pack data */
-	int init_size = 2<<10, size;
+	int init_size = 2<<10;
 	Window *snd_pkt = (Window*) malloc(init_size * sizeof(Window));
-	int total_pkt = 0;
+	int total_pkt = 0, size = init_size;
 	while (1) {
 		memset(data, 0, BUF_LEN*sizeof(char));
 		if ((nbytes = read(fd, data, BUF_LEN)) < 0) die("read file failed");
@@ -106,7 +105,7 @@ int main(int argc, char* argv[])
 	/* send data and receive ack */
 	int rcv_len;
 	Packet rcv_pkt;
-	int base = 1, win_size = 1, thres = THRES, done = 0;
+	int base = 1, win_size = 1, done = 0;
 	while (!done) {
 		/* send packets */
 		int total_snd = 0;
@@ -142,7 +141,7 @@ int main(int argc, char* argv[])
 		}
 		if (total_rcv != total_snd) {
 			/* timeout */
-			thres = (win_size/2 > 1)? win_size: 1;
+			thres = (win_size/2 > 1)? win_size/2: 1;
 			win_size = 1;
 			printf("time\tout,\t\tthreshold = %d\n", thres);
 		}

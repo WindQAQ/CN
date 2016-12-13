@@ -14,16 +14,17 @@
 #include "agent.h"
 #include "packet.h"
 
-#ifdef DROP
-#define DROP_RATE 0.1
-#endif
-
 char destIP[BUF_LEN];
 int destPort, srcPort;
 char file_path[BUF_LEN];
 
 int main(int argc, char* argv[])
 {
+#ifdef DROP
+	int v;
+	double loss_prob = 0.1;
+	if ((v = find_arg(argc, argv, "-loss_rate")) != -1) loss_prob = atof(argv[v+1]);
+#endif
 	/* 0 for sender, 1 for receiver */
 	int socket_fd;
 	struct sockaddr_in my_addr;
@@ -42,7 +43,7 @@ int main(int argc, char* argv[])
 
 #ifdef DROP
 	srand(time(NULL));
-	int total_data = 0, total_drop = 0;
+	int total_data = 0, total_drop = 0, dropped = 0;
 	double loss_rate = 0.0;
 #endif
 
@@ -68,14 +69,17 @@ int main(int argc, char* argv[])
 		/* forward packets */
 		if (type == DATA) {
 #ifdef DROP
+			dropped = 0;
 			total_data++;
-			if ((double)rand()/RAND_MAX < DROP_RATE) {
+			if ((double)rand()/RAND_MAX < loss_prob) {
+				dropped = 1;
 				total_drop++;
-				loss_rate = (double) total_drop/total_data;
-				printf("fwd\tdata\t#%d,\tloss rate = %f\n", rcv_pkt.h.seq, loss_rate);
-				continue;
 			} 
-			printf("fwd\tdata\t#%d,\tloss rate = %f\n", rcv_pkt.h.seq, loss_rate);
+			loss_rate = (double) total_drop/total_data;
+			printf("fwd\tdata\t#%d,\tloss rate = %f%s\n", rcv_pkt.h.seq, loss_rate, (dropped)? ", drop\t": "");
+			if (dropped) {
+				continue;
+			}
 #endif
 #ifndef DROP
 			printf("fwd\tdata\t#%d\n", rcv_pkt.h.seq);
