@@ -63,7 +63,7 @@ int main(int argc, char* argv[])
 	dest_addr.sin_port = htons(destPort);
 	inet_pton(AF_INET, destIP, &(dest_addr.sin_addr));
 
-	/* Construct header of packet*/
+	/* construct header of packet */
 	Header snd_h;
 	memset(&snd_h, 0, sizeof(Header));
 	memcpy(&snd_h.src, &my_addr, sizeof(struct sockaddr_in));
@@ -87,7 +87,7 @@ int main(int argc, char* argv[])
 	Window *snd_pkt = (Window*) malloc(init_size * sizeof(Window));
 	int total_pkt = 0;
 	while (1) {
-		memset(data, 0, BUF_LEN);
+		memset(data, 0, BUF_LEN*sizeof(char));
 		if ((nbytes = read(fd, data, BUF_LEN)) < 0) die("read file failed");
 		if (nbytes == 0) break;
 		if (total_pkt == size) {
@@ -114,7 +114,7 @@ int main(int argc, char* argv[])
 			if (sendto(socket_fd, &snd_pkt[i-1].pkt, sizeof(Packet), 0, (struct sockaddr*)&agent_addr, agent_addr_len) < 0) {
 				die("sendto failed");
 			}
-			printf("%s\tdata\t#%d,\twinSize = %d\n", (snd_pkt[i].sent)? "resnd": "send", snd_pkt[i].pkt.h.seq, win_size);
+			printf("%s\tdata\t#%d,\twinSize = %d\n", (snd_pkt[i-1].sent)? "resnd": "send", snd_pkt[i-1].pkt.h.seq, win_size);
 			snd_pkt[i-1].sent = 1;
 			total_snd++;
 		}
@@ -144,7 +144,7 @@ int main(int argc, char* argv[])
 			/* timeout */
 			thres = (win_size/2 > 1)? win_size: 1;
 			win_size = 1;
-			printf("time\tout,\tthreshold = %d\n", thres);
+			printf("time\tout,\t\tthreshold = %d\n", thres);
 		}
 		else {
 			/* all packets within window are acked */
@@ -187,6 +187,7 @@ int main(int argc, char* argv[])
 		}
 	}
 
+	free(snd_pkt);
 	close(socket_fd);
 
 	return 0;

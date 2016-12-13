@@ -33,7 +33,7 @@ int main(int argc, char* argv[])
 	if ((v = find_arg(argc, argv, "-port")) != -1) port = atoi(argv[v+1]);
 	if ((v = find_arg(argc, argv, "-file")) != -1) strcpy(file_path, argv[v+1]);
 
-	memset(buffer, 0, BUFFER_SIZE);
+	memset(buffer, 0, BUFFER_SIZE*sizeof(Buffer));
 
 	int socket_fd;
 	struct sockaddr_in my_addr;
@@ -66,6 +66,7 @@ int main(int argc, char* argv[])
 		
 		type = rcv_pkt.h.type;
 		seq = rcv_pkt.h.seq;
+
 		if (type == DATA) {
 			if (seq-base >= BUFFER_SIZE) {
 				/* out of range */
@@ -75,7 +76,7 @@ int main(int argc, char* argv[])
 					for (int i = 0; i < BUFFER_SIZE; i++)
 						if (write(fd, buffer[i].data, buffer[i].len) < 0) die("write to file failed");
 					base += BUFFER_SIZE;
-					memset(buffer, 0, BUFFER_SIZE);
+					memset(buffer, 0, BUFFER_SIZE*sizeof(Buffer));
 					total_used = 0;
 				}
 				continue;
@@ -104,7 +105,7 @@ int main(int argc, char* argv[])
 		memcpy(&snd_pkt.h.dest, &rcv_pkt.h.src, sizeof(struct sockaddr_in));
 		snd_pkt.h.len = 0;
 		snd_pkt.h.seq = seq;
-		memset(snd_pkt.data, 0, BUF_LEN);
+		memset(snd_pkt.data, 0, BUF_LEN*sizeof(char));
 		if (sendto(socket_fd, &snd_pkt, sizeof(Packet), 0, (struct sockaddr*)&addr, addr_len) < 0) {
 			die("sendto failed");
 		}
