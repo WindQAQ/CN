@@ -92,7 +92,10 @@ int main(int argc, char* argv[])
 		if (total_pkt == size) {
 			size *= 2;
 			Window *new_mem = realloc(snd_pkt, size*sizeof(Window));
-			if (new_mem == NULL) die("file is too large");
+			if (new_mem == NULL) {
+				fprintf(stderr, "file is too large");
+				exit(1);
+			}
 			snd_pkt = new_mem;
 		}
 		snd_h.seq = total_pkt + 1;
