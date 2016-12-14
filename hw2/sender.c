@@ -143,22 +143,24 @@ int main(int argc, char* argv[])
 			total_rcv++;
 		}
 		if (total_rcv != total_snd) {
-			/* timeout */
+			/* packet loss: timeout */
 			thres = (win_size/2 > 1)? win_size/2: 1;
 			win_size = 1;
 			printf("time\tout,\t\tthreshold = %d\n", thres);
+			/* find base */
+			for (int i = base; i <= total_pkt; i++) {
+				if (snd_pkt[i-1].acked == 0) {
+					base = i;
+					break;
+				}
+				if (i == total_pkt) done = 1;
+			}
 		}
 		else {
 			/* all packets within window are acked */
+			base += win_size;
 			win_size = (win_size < thres)? win_size*2: win_size+1;
-		}
-		/* find base */
-		for (int i = base; i <= total_pkt; i++) {
-			if (snd_pkt[i-1].acked == 0) {
-				base = i;
-				break;
-			}
-			if (i == total_pkt) done = 1;
+			if (base > total_pkt) done = 1;
 		}
 	}
 
