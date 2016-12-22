@@ -11,21 +11,21 @@
 #include <fcntl.h>
 
 #include "utility.h"
-#include "agent.h"
 #include "packet.h"
 
-char destIP[BUF_LEN];
-int destPort, srcPort;
+char IP[BUF_LEN];
+int port;
 char file_path[BUF_LEN];
 
 int main(int argc, char* argv[])
 {
-#ifdef DROP
 	int v;
-	double loss_prob = 0.1;
-	if ((v = find_arg(argc, argv, "-loss_rate")) != -1) loss_prob = atof(argv[v+1]);
-#endif
-	/* 0 for sender, 1 for receiver */
+	double loss_prob = 0.0;
+	strcpy(IP, "127.0.0.1");
+	if ((v = find_arg(argc, argv, "-loss_prob")) != -1) loss_prob = atof(argv[v+1]);
+	if ((v = find_arg(argc, argv, "-ip")) != -1) strcpy(IP, argv[v+1]);
+	if ((v = find_arg(argc, argv, "-port")) != -1) port = atoi(argv[v+1]);
+
 	int socket_fd;
 	struct sockaddr_in my_addr;
 
@@ -35,17 +35,15 @@ int main(int argc, char* argv[])
 	}
 	memset((char *)&my_addr, 0, sizeof(my_addr));
 	my_addr.sin_family = AF_INET;
-	my_addr.sin_port = htons(AGENT_PORT);
-	my_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+	my_addr.sin_port = htons(port);
+	inet_pton(AF_INET, IP, &(my_addr.sin_addr));
 	if (bind(socket_fd, (struct sockaddr *)&my_addr, sizeof(my_addr)) < 0) {
 		die("bind failed");
 	}
 
-#ifdef DROP
 	srand(time(NULL));
 	int total_data = 0, total_drop = 0, dropped = 0;
 	double loss_rate = 0.0;
-#endif
 
 	Packet rcv_pkt;
 	int rcv_len;
@@ -68,7 +66,6 @@ int main(int argc, char* argv[])
 
 		/* forward packets */
 		if (type == DATA) {
-#ifdef DROP
 			dropped = 0;
 			total_data++;
 			if ((double)rand()/RAND_MAX < loss_prob) {
@@ -76,14 +73,10 @@ int main(int argc, char* argv[])
 				total_drop++;
 			} 
 			loss_rate = (double) total_drop/total_data;
-			printf("fwd\tdata\t#%d,\tloss rate = %f%s\n", rcv_pkt.h.seq, loss_rate, (dropped)? ", drop\t": "");
+			printf("fwd\tdata\t#%d,\tloss rate = %f%s\n", rcv_pkt.h.seq, loss_rate, (dropped)? ", drop": "");
 			if (dropped) {
 				continue;
 			}
-#endif
-#ifndef DROP
-			printf("fwd\tdata\t#%d\n", rcv_pkt.h.seq);
-#endif
 		}
 		else if (type == ACK) {
 			printf("fwd\tack\t#%d\n", rcv_pkt.h.seq);

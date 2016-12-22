@@ -12,7 +12,6 @@
 #include <errno.h>
 
 #include "utility.h"
-#include "agent.h"
 #include "packet.h"
 
 typedef struct window {
@@ -21,8 +20,8 @@ typedef struct window {
 	int sent;
 } Window;
 
-char destIP[BUF_LEN];
-int destPort, srcPort, thres = 16;
+char destIP[BUF_LEN], agentIP[BUF_LEN];
+int destPort, srcPort, agentPort, thres = 16;
 char file_path[BUF_LEN];
 
 int main(int argc, char* argv[])
@@ -31,6 +30,8 @@ int main(int argc, char* argv[])
 	if ((v = find_arg(argc, argv, "-destIP")) != -1)	strcpy(destIP, argv[v+1]);
 	if ((v = find_arg(argc, argv, "-destPort")) != -1)	destPort = atoi(argv[v+1]);
 	if ((v = find_arg(argc, argv, "-srcPort")) != -1)	srcPort = atoi(argv[v+1]);
+	if ((v = find_arg(argc, argv, "-agentIP")) != -1)   strcpy(agentIP, argv[v+1]);
+	if ((v = find_arg(argc, argv, "-agentPort")) != -1)	agentPort = atoi(argv[v+1]);	
 	if ((v = find_arg(argc, argv, "-file")) != -1)	strcpy(file_path, argv[v+1]);
 	if ((v = find_arg(argc, argv, "-thres")) != -1) thres = atoi(argv[v+1]);
 
@@ -52,8 +53,8 @@ int main(int argc, char* argv[])
 	/* info of agent */
 	memset((char *)&agent_addr, 0, sizeof(agent_addr));
 	agent_addr.sin_family = AF_INET;
-	agent_addr.sin_port = htons(AGENT_PORT);
-	agent_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+	agent_addr.sin_port = htons(agentPort);
+	inet_pton(AF_INET, agentIP, &(agent_addr.sin_addr));
 	int agent_addr_len = sizeof(agent_addr);
 	
 	/* info of destinaion */
