@@ -1,8 +1,8 @@
 CC=gcc
 CFLAGS=-O2 -std=c99
 
-TARGET=sender agent receiver
-HEADER=utility.h packet.h agent.h
+TARGET=sender agent receiver sender-MPTCP agent-MPTCP
+HEADER=utility.h packet.h
 
 INPUT=input/input.txt
 OUTPUT=output/output.txt
@@ -19,6 +19,9 @@ BUFFER_SIZE=32
 
 LOSS_PROB=0.1
 
+SUBFLOW=2
+AGENTPORT_MPTCP=12040 12041
+
 all: $(TARGET)
 
 sender: sender.c $(HEADER)
@@ -30,6 +33,12 @@ agent: agent.c $(HEADER)
 receiver: receiver.c $(HEADER)
 	$(CC) $(CFLAGS) $< -o $@
 
+sender-MPTCP: sender-MPTCP.c $(HEADER)
+	$(CC) $(CFLAGS) $< -o $@
+
+agent-MPTCP: agent-MPTCP.c $(HEADER)
+	$(CC) $(CFLAGS) $< -o $@ -lpthread
+
 runsender: sender
 	./$< -srcPort $(SRCPORT) -agentPort $(AGENTPORT) -agentIP $(AGENTIP) -destPort $(DESTPORT) -destIP $(DESTIP) -file $(INPUT) -thres $(THRES)
 
@@ -39,5 +48,11 @@ runagent: agent
 runreceiver: receiver
 	./$< -port $(DESTPORT) -file $(OUTPUT) -buffer $(BUFFER_SIZE)
 
+runsender-MPTCP: sender-MPTCP
+	./$< -srcPort $(SRCPORT) -subflow_num $(SUBFLOW) -agentPort $(AGENTPORT_MPTCP) -agentIP $(AGENTIP) -destPort $(DESTPORT) -destIP $(DESTIP) -file $(INPUT) -thres $(THRES)
+
+runagent-MPTCP: agent-MPTCP
+	./$< -subflow_num $(SUBFLOW) -ip $(AGENTIP) -port $(AGENTPORT_MPTCP) -loss_prob $(LOSS_PROB)
+	
 clean:
 	rm -rf $(TARGET)
