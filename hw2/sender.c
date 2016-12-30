@@ -20,7 +20,7 @@ typedef struct window {
 	int sent;
 } Window;
 
-char destIP[BUF_LEN], agentIP[BUF_LEN];
+char destIP[BUF_LEN], srcIP[BUF_LEN], agentIP[BUF_LEN];
 int destPort, srcPort, agentPort, thres = 16;
 char file_path[BUF_LEN];
 
@@ -29,6 +29,7 @@ int main(int argc, char* argv[])
 	int v;
 	if ((v = find_arg(argc, argv, "-destIP")) != -1)	strcpy(destIP, argv[v+1]);
 	if ((v = find_arg(argc, argv, "-destPort")) != -1)	destPort = atoi(argv[v+1]);
+	if ((v = find_arg(argc, argv, "-srcIP")) != -1)	strcpy(srcIP, argv[v+1]);
 	if ((v = find_arg(argc, argv, "-srcPort")) != -1)	srcPort = atoi(argv[v+1]);
 	if ((v = find_arg(argc, argv, "-agentIP")) != -1)   strcpy(agentIP, argv[v+1]);
 	if ((v = find_arg(argc, argv, "-agentPort")) != -1)	agentPort = atoi(argv[v+1]);	
@@ -45,7 +46,7 @@ int main(int argc, char* argv[])
 	memset((char *)&my_addr, 0, sizeof(my_addr));
 	my_addr.sin_family = AF_INET;
 	my_addr.sin_port = htons(srcPort);
-	my_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+	inet_pton(AF_INET, srcIP, &(my_addr.sin_addr));
 	if (bind(socket_fd, (struct sockaddr *)&my_addr, sizeof(my_addr)) < 0) {
 		die("bind failed");
 	}

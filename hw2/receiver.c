@@ -18,6 +18,7 @@ typedef struct buffer {
 	int used;
 } Buffer;
 
+char IP[BUF_LEN];
 int port, buffer_size = 32;
 char file_path[BUF_LEN];
 
@@ -28,6 +29,7 @@ int base = 1, seq = 1;
 int main(int argc, char* argv[])
 {
 	int v;
+    if ((v = find_arg(argc, argv, "ip")) != -1) strcpy(IP, argv[v+1]);
 	if ((v = find_arg(argc, argv, "-port")) != -1) port = atoi(argv[v+1]);
 	if ((v = find_arg(argc, argv, "-file")) != -1) strcpy(file_path, argv[v+1]);
 	if ((v = find_arg(argc, argv, "-buffer")) != -1) buffer_size = atoi(argv[v+1]);
@@ -44,7 +46,7 @@ int main(int argc, char* argv[])
 	memset((char *)&my_addr, 0, sizeof(my_addr));
 	my_addr.sin_family = AF_INET;
 	my_addr.sin_port = htons(port);
-	my_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+    inet_pton(AF_INET, IP, &my_addr.sin_addr);
 	if (bind(socket_fd, (struct sockaddr *)&my_addr, sizeof(my_addr)) < 0) {
 		die("bind failed");
 	}

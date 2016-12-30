@@ -12,6 +12,7 @@ SRCPORT=12345
 AGENTPORT=12040
 
 DESTIP=127.0.0.1
+SRCIP=127.0.0.1
 AGENTIP=127.0.0.1
 
 THRES=16
@@ -40,13 +41,13 @@ agent-MPTCP: agent-MPTCP.c $(HEADER)
 	$(CC) $(CFLAGS) $< -o $@ -lpthread
 
 runsender: sender
-	./$< -srcPort $(SRCPORT) -agentPort $(AGENTPORT) -agentIP $(AGENTIP) -destPort $(DESTPORT) -destIP $(DESTIP) -file $(INPUT) -thres $(THRES)
+	./$< -srcPort $(SRCPORT) -srcIP $(SRCIP) -agentPort $(AGENTPORT) -agentIP $(AGENTIP) -destPort $(DESTPORT) -destIP $(DESTIP) -file $(INPUT) -thres $(THRES)
 
 runagent: agent
 	./$< -ip $(AGENTIP) -port $(AGENTPORT) -loss_prob $(LOSS_PROB)
 
 runreceiver: receiver
-	./$< -port $(DESTPORT) -file $(OUTPUT) -buffer $(BUFFER_SIZE)
+	./$< -ip $(DESTIP) -port $(DESTPORT) -file $(OUTPUT) -buffer $(BUFFER_SIZE)
 
 runsender-MPTCP: sender-MPTCP
 	./$< -srcPort $(SRCPORT) -subflow_num $(SUBFLOW) -agentPort $(AGENTPORT_MPTCP) -agentIP $(AGENTIP) -destPort $(DESTPORT) -destIP $(DESTIP) -file $(INPUT) -thres $(THRES)

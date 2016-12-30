@@ -21,7 +21,7 @@ typedef struct window {
 	int sent;
 } Window;
 
-char destIP[BUF_LEN], agentIP[BUF_LEN];
+char destIP[BUF_LEN], srcIP[BUF_LEN], agentIP[BUF_LEN];
 int destPort, srcPort, *agentPort, subflow_num, thres = 16;
 char file_path[BUF_LEN];
 
@@ -30,6 +30,7 @@ int main(int argc, char* argv[])
 	int v;
 	if ((v = find_arg(argc, argv, "-destIP")) != -1)	strcpy(destIP, argv[v+1]);
 	if ((v = find_arg(argc, argv, "-destPort")) != -1)	destPort = atoi(argv[v+1]);
+	if ((v = find_arg(argc, argv, "-srcIP")) != -1)	strcpy(srcIP, argv[v+1]);
 	if ((v = find_arg(argc, argv, "-srcPort")) != -1)	srcPort = atoi(argv[v+1]);
 	if ((v = find_arg(argc, argv, "-file")) != -1)	strcpy(file_path, argv[v+1]);
 	if ((v = find_arg(argc, argv, "-thres")) != -1) thres = atoi(argv[v+1]);
@@ -57,7 +58,7 @@ int main(int argc, char* argv[])
 	memset((char *)&my_addr, 0, sizeof(my_addr));
 	my_addr.sin_family = AF_INET;
 	my_addr.sin_port = htons(srcPort);
-	my_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+	inet_pton(AF_INET, srcIP, &my_addr.sin_addr);
 	if (bind(socket_fd, (struct sockaddr *)&my_addr, sizeof(my_addr)) < 0) {
 		die("bind failed");
 	}
@@ -89,7 +90,7 @@ int main(int argc, char* argv[])
 	struct timeval timeout;
 	memset(&timeout, 0, sizeof(struct timeval));
 	timeout.tv_sec = 0;
-    timeout.tv_usec = 100000;
+    timeout.tv_usec = 10000;
 	if (setsockopt(socket_fd, SOL_SOCKET, SO_RCVTIMEO, (struct timeval*)&timeout, sizeof(struct timeval))) die("setsockopt failed");
 
 	/* open source file */

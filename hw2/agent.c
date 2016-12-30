@@ -52,7 +52,6 @@ int main(int argc, char* argv[])
 	int dest_addr_len = sizeof(dest_addr);
 	int type;
 	while (1) {
-		/* receiver packets */
 		if ((rcv_len = recvfrom(socket_fd, &rcv_pkt, sizeof(Packet), 0, (struct sockaddr*)&src_addr, &src_addr_len)) < 0) {
 			die("recvfrom failed");
 		}
