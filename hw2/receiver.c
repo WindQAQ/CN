@@ -67,7 +67,7 @@ int main(int argc, char* argv[])
 		seq = rcv_pkt.h.seq;
 
 		if (type == DATA) {
-			if (seq-base >= buffer_size) {
+			if ((seq-base >= buffer_size) || (seq-base < 0)) {
 				/* out of range */
 				printf("drop\tdata\t#%d\n", seq);
 				if (total_used == buffer_size) {

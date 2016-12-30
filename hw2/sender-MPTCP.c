@@ -88,7 +88,8 @@ int main(int argc, char* argv[])
 	/* set receive timeout on socket: 1 second  */
 	struct timeval timeout;
 	memset(&timeout, 0, sizeof(struct timeval));
-	timeout.tv_sec = 1;
+	timeout.tv_sec = 0;
+    timeout.tv_usec = 100000;
 	if (setsockopt(socket_fd, SOL_SOCKET, SO_RCVTIMEO, (struct timeval*)&timeout, sizeof(struct timeval))) die("setsockopt failed");
 
 	/* open source file */
